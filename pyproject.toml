@@ -1,0 +1,45 @@
+# 官方语法： https://toml.io/en/v1.0.0
+# python编写指导： https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+# python toml编写规范： https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+# uv如何使用toml https://docs.astral.sh/uv/guides/projects/
+
+[project]
+name = "service-desk-copilot"
+version = "0.1.0"
+description = "Enterprise service desk agent learning project"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]",
+    "pydantic>=2",
+]
+
+[dependency-groups]
+dev = [
+    "httpx",
+    "pytest",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "RUF",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
