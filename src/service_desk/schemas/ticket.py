@@ -22,3 +22,7 @@ class TicketResponse(BaseModel):
     status: TicketStatus
     assignee: str | None
     source: TicketSource
+
+
+class TicketStatusUpdate(BaseModel):
+    status: TicketStatus

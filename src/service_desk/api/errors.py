@@ -5,6 +5,7 @@ from service_desk.domain.exceptions import (
     CustomerAlreadyExists,
     CustomerInactive,
     CustomerNotFound,
+    InvalidTicketTransition,
     TicketAlreadyExists,
     TicketNotFound,
 )
@@ -68,6 +69,24 @@ async def customer_inactive_handler(_request: Request, exc: CustomerInactive) ->
     )
 
 
+async def invalid_ticket_transition_handler(
+    _request: Request,
+    exc: InvalidTicketTransition,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="invalid_ticket_transition",
+        message=(
+            f"Ticket '{exc.ticket_id}' cannot transition "
+            f"from '{exc.current_status}' to '{exc.target_status}'"
+        ),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=error.model_dump(),
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         CustomerNotFound,
@@ -92,4 +111,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         CustomerInactive,
         customer_inactive_handler,
+    )
+
+    app.add_exception_handler(
+        InvalidTicketTransition,
+        invalid_ticket_transition_handler,
     )

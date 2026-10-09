@@ -2,7 +2,11 @@ from fastapi import APIRouter, status
 
 from service_desk.api.dependencies import TicketServiceDep
 from service_desk.domain.enums import TicketPriority, TicketStatus
-from service_desk.schemas.ticket import TicketCreate, TicketResponse
+from service_desk.schemas.ticket import (
+    TicketCreate,
+    TicketResponse,
+    TicketStatusUpdate,
+)
 
 router = APIRouter(prefix="/api/v1/tickets")
 
@@ -74,3 +78,26 @@ def get_tickets(
         result.append(response)
 
     return result
+
+
+@router.patch("/{ticket_id}/status", response_model=TicketResponse)
+def update_status(
+    ticket_id: str,
+    param: TicketStatusUpdate,
+    svc: TicketServiceDep,
+) -> TicketResponse:
+    ticket = svc.change_ticket_status(
+        ticket_id=ticket_id,
+        target_status=param.status,
+    )
+
+    return TicketResponse(
+        id=ticket.id,
+        customer_id=ticket.customer_id,
+        title=ticket.title,
+        description=ticket.description,
+        priority=ticket.priority,
+        status=ticket.status,
+        assignee=ticket.assignee,
+        source=ticket.source,
+    )

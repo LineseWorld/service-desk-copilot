@@ -20,6 +20,9 @@ class TicketRepository(ABC):
     def add(self, ticket: Ticket) -> None: ...
 
     @abstractmethod
+    def update(self, ticket: Ticket) -> None: ...
+
+    @abstractmethod
     def list(
         self,
         customer_id: str | None,

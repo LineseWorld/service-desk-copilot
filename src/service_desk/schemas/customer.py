@@ -11,8 +11,8 @@ class CustomerCreate(BaseModel):
 
 
 class CustomerResponse(BaseModel):
-    id: str = Field(min_length=1, max_length=50)
-    name: str = Field(min_length=1, max_length=100)
-    plan: CustomerPlan = Field(description="只允许FREE, STANDARD, ENTERPRISE")
-    status: CustomerStatus = Field(default=CustomerStatus.ACTIVE)
+    id: str
+    name: str
+    plan: CustomerPlan
+    status: CustomerStatus
     products: list[str]

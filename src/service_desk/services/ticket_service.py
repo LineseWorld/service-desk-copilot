@@ -70,3 +70,20 @@ class TicketService:
         priority: TicketPriority | None,
     ) -> list[Ticket]:
         return self._ticket_repository.list(customer_id, status, priority)
+
+    def change_ticket_status(
+        self,
+        *,
+        ticket_id: str,
+        target_status: TicketStatus,
+    ) -> Ticket:
+        ticket = self._ticket_repository.get_by_id(ticket_id=ticket_id)
+
+        if ticket is None:
+            raise TicketNotFound(ticket_id)
+
+        ticket.transition_to(target_status)
+
+        self._ticket_repository.update(ticket)
+
+        return ticket

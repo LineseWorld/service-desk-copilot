@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from service_desk.domain.enums import TicketPriority, TicketStatus
 from service_desk.domain.models import Customer, Ticket
 from service_desk.repositories.interfaces import CustomerRepository, TicketRepository
@@ -11,10 +13,10 @@ class InMemoryCustomerRepository(CustomerRepository):
         customer = self._customers.get(customer_id)
         if not customer:
             return None
-        return customer
+        return deepcopy(customer)
 
     def add(self, customer: Customer) -> None:
-        self._customers[customer.id] = customer
+        self._customers[customer.id] = deepcopy(customer)
 
 
 class InMemoryTicketRepository(TicketRepository):
@@ -25,10 +27,13 @@ class InMemoryTicketRepository(TicketRepository):
         ticket = self._tickets.get(ticket_id)
         if not ticket:
             return None
-        return ticket
+        return deepcopy(ticket)
 
     def add(self, ticket: Ticket) -> None:
-        self._tickets[ticket.id] = ticket
+        self._tickets[ticket.id] = deepcopy(ticket)
+
+    def update(self, ticket: Ticket) -> None:
+        self._tickets[ticket.id] = deepcopy(ticket)
 
     def list(
         self,
@@ -47,5 +52,5 @@ class InMemoryTicketRepository(TicketRepository):
                 is_add = is_add and ticket.priority == priority
 
             if is_add:
-                result.append(ticket)
+                result.append(deepcopy(ticket))
         return result
