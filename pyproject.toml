@@ -43,3 +43,12 @@ select = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+
+[build-system]
+requires = ["uv_build>=0.12.18,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "service_desk"
+module-root = "src"
