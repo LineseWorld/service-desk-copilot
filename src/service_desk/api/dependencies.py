@@ -2,7 +2,13 @@ from typing import Annotated, cast
 
 from fastapi import Depends, Request
 
-from service_desk.repositories.interfaces import CustomerRepository, TicketRepository
+from service_desk.repositories.interfaces import (
+    ConversationRepository,
+    CustomerRepository,
+    MessageRepository,
+    TicketRepository,
+)
+from service_desk.services.conversation_service import ConversationService
 from service_desk.services.customer_service import CustomerService
 from service_desk.services.ticket_service import TicketService
 
@@ -46,4 +52,35 @@ def get_ticket_service(
 TicketServiceDep = Annotated[
     TicketService,
     Depends(get_ticket_service),
+]
+
+
+def get_conversation_service(
+    request: Request,
+) -> ConversationService:
+    customer_repository = cast(
+        CustomerRepository,
+        request.app.state.customer_repository,
+    )
+
+    conversation_repository = cast(
+        ConversationRepository,
+        request.app.state.conversation_repository,
+    )
+
+    message_repository = cast(
+        MessageRepository,
+        request.app.state.message_repository,
+    )
+
+    return ConversationService(
+        customer_repository=customer_repository,
+        conversation_repository=conversation_repository,
+        message_repository=message_repository,
+    )
+
+
+ConversationServiceDep = Annotated[
+    ConversationService,
+    Depends(get_conversation_service),
 ]

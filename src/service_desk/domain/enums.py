@@ -30,3 +30,14 @@ class TicketStatus(StrEnum):
 class TicketSource(StrEnum):
     MANUAL = "MANUAL"
     AGENT = "AGENT"
+
+
+class ConversationStatus(StrEnum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+
+
+class MessageRole(StrEnum):
+    USER = "USER"
+    ASSISTANT = "ASSISTANT"
+    SYSTEM = "SYSTEM"

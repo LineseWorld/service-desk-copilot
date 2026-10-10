@@ -65,3 +65,27 @@ class InvalidTicketTransition(BusinessError):
         super().__init__(
             f"Ticket '{ticket_id}' cannot transition from {current_status} to {target_status}"
         )
+
+
+class ConversationNotFound(BusinessError):
+    def __init__(self, conversation_id: str) -> None:
+        self.conversation_id = conversation_id
+        super().__init__(f"Conversation with id '{conversation_id}' was not found")
+
+
+class ConversationAlreadyExists(BusinessError):
+    def __init__(self, conversation_id: str) -> None:
+        self.conversation_id = conversation_id
+        super().__init__(f"Conversation with id '{conversation_id}' already exists")
+
+
+class ConversationAlreadyClosed(BusinessError):
+    def __init__(self, conversation_id: str) -> None:
+        self.conversation_id = conversation_id
+        super().__init__(f"Conversation with id '{conversation_id}' is already closed")
+
+
+class MessageAlreadyExists(BusinessError):
+    def __init__(self, message_id: str) -> None:
+        self.message_id = message_id
+        super().__init__(f"Message with id '{message_id}' already exists")

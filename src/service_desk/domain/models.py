@@ -1,13 +1,16 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from service_desk.domain.enums import (
+    ConversationStatus,
     CustomerPlan,
     CustomerStatus,
+    MessageRole,
     TicketPriority,
     TicketSource,
     TicketStatus,
 )
-from service_desk.domain.exceptions import InvalidTicketTransition
+from service_desk.domain.exceptions import ConversationAlreadyClosed, InvalidTicketTransition
 
 
 @dataclass
@@ -58,3 +61,30 @@ ALLOWED_TICKET_TRANSITIONS: dict[TicketStatus, set[TicketStatus]] = {
     },
     TicketStatus.CLOSED: set(),
 }
+
+
+@dataclass
+class Conversation:
+    id: str
+    customer_id: str
+    status: ConversationStatus
+    created_at: datetime
+
+    def close(self) -> None:
+        if self.status == ConversationStatus.CLOSED:
+            raise ConversationAlreadyClosed(self.id)
+
+        self.status = ConversationStatus.CLOSED
+
+    def ensure_accepts_message(self) -> None:
+        if self.status == ConversationStatus.CLOSED:
+            raise ConversationAlreadyClosed(self.id)
+
+
+@dataclass
+class Message:
+    id: str
+    conversation_id: str
+    role: MessageRole
+    content: str
+    created_at: datetime

@@ -2,10 +2,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from service_desk.domain.exceptions import (
+    ConversationAlreadyClosed,
+    ConversationAlreadyExists,
+    ConversationNotFound,
     CustomerAlreadyExists,
     CustomerInactive,
     CustomerNotFound,
     InvalidTicketTransition,
+    MessageAlreadyExists,
     TicketAlreadyExists,
     TicketNotFound,
 )
@@ -87,6 +91,66 @@ async def invalid_ticket_transition_handler(
     )
 
 
+async def conversation_not_found_handler(
+    _request: Request,
+    exc: ConversationNotFound,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="conversation_not_found",
+        message=(f"Conversation '{exc.conversation_id}' was not found"),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=error.model_dump(),
+    )
+
+
+async def conversation_already_exists_handler(
+    _request: Request,
+    exc: ConversationAlreadyExists,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="conversation_already_exists",
+        message=(f"Conversation '{exc.conversation_id}' already exists"),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=error.model_dump(),
+    )
+
+
+async def conversation_already_closed_handler(
+    _request: Request,
+    exc: ConversationAlreadyClosed,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="conversation_already_closed",
+        message=(f"Conversation '{exc.conversation_id}' is already closed"),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=error.model_dump(),
+    )
+
+
+async def message_already_exists_handler(
+    _request: Request,
+    exc: MessageAlreadyExists,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="message_already_exists",
+        message=f"Message '{exc.message_id}' already exists",
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=error.model_dump(),
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         CustomerNotFound,
@@ -116,4 +180,24 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         InvalidTicketTransition,
         invalid_ticket_transition_handler,
+    )
+
+    app.add_exception_handler(
+        ConversationNotFound,
+        conversation_not_found_handler,
+    )
+
+    app.add_exception_handler(
+        ConversationAlreadyExists,
+        conversation_already_exists_handler,
+    )
+
+    app.add_exception_handler(
+        ConversationAlreadyClosed,
+        conversation_already_closed_handler,
+    )
+
+    app.add_exception_handler(
+        MessageAlreadyExists,
+        message_already_exists_handler,
     )
