@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: service-desk-postgres
+    environment:
+      POSTGRES_DB: service_desk
+      POSTGRES_USER: service_desk
+      POSTGRES_PASSWORD: service_desk
+    ports:
+      - "5432:5432"
+    volumes:
+      - service_desk_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U service_desk -d service_desk
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  service_desk_postgres_data:

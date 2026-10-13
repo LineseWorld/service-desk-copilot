@@ -1,20 +1,36 @@
-from typing import Annotated, cast
+from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends
+from sqlalchemy.orm import Session
 
+from service_desk.database.session import get_db_session
 from service_desk.repositories.interfaces import (
     ConversationRepository,
     CustomerRepository,
     MessageRepository,
     TicketRepository,
 )
+from service_desk.repositories.sqlalchemy import (
+    SqlAlchemyConversationRepository,
+    SqlAlchemyCustomerRepository,
+    SqlAlchemyMessageRepository,
+    SqlAlchemyTicketRepository,
+)
 from service_desk.services.conversation_service import ConversationService
 from service_desk.services.customer_service import CustomerService
 from service_desk.services.ticket_service import TicketService
 
+DbSessionDep = Annotated[
+    Session,
+    Depends(
+        get_db_session,
+        scope="function",
+    ),
+]
 
-def get_customer_repository(request: Request) -> CustomerRepository:
-    return cast(CustomerRepository, request.app.state.customer_repository)
+
+def get_customer_repository(session: DbSessionDep) -> CustomerRepository:
+    return SqlAlchemyCustomerRepository(session)
 
 
 CustomerRepositoryDep = Annotated[
@@ -33,8 +49,8 @@ CustomerServiceDep = Annotated[
 ]
 
 
-def get_ticket_repository(request: Request) -> TicketRepository:
-    return cast(TicketRepository, request.app.state.ticket_repository)
+def get_ticket_repository(session: DbSessionDep) -> TicketRepository:
+    return SqlAlchemyTicketRepository(session)
 
 
 TicketRepositoryDep = Annotated[
@@ -55,24 +71,31 @@ TicketServiceDep = Annotated[
 ]
 
 
+def get_conversation_repository(session: DbSessionDep) -> ConversationRepository:
+    return SqlAlchemyConversationRepository(session)
+
+
+ConversationRepositoryDep = Annotated[
+    ConversationRepository,
+    Depends(get_conversation_repository),
+]
+
+
+def get_message_repository(session: DbSessionDep) -> MessageRepository:
+    return SqlAlchemyMessageRepository(session)
+
+
+MessageRepositoryDep = Annotated[
+    MessageRepository,
+    Depends(get_message_repository),
+]
+
+
 def get_conversation_service(
-    request: Request,
+    customer_repository: CustomerRepositoryDep,
+    conversation_repository: ConversationRepositoryDep,
+    message_repository: MessageRepositoryDep,
 ) -> ConversationService:
-    customer_repository = cast(
-        CustomerRepository,
-        request.app.state.customer_repository,
-    )
-
-    conversation_repository = cast(
-        ConversationRepository,
-        request.app.state.conversation_repository,
-    )
-
-    message_repository = cast(
-        MessageRepository,
-        request.app.state.message_repository,
-    )
-
     return ConversationService(
         customer_repository=customer_repository,
         conversation_repository=conversation_repository,

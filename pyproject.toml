@@ -10,8 +10,12 @@ description = "Enterprise service desk agent learning project"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.20.0",
     "fastapi[standard]",
+    "psycopg[binary]>=3.3.6",
     "pydantic>=2",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy>=2.1.4",
 ]
 
 [dependency-groups]
@@ -25,6 +29,9 @@ dev = [
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: requires a running migrated PostgreSQL database",
+]
 
 [tool.ruff]
 target-version = "py311"

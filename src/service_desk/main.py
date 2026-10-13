@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,27 +7,17 @@ from service_desk.api.errors import register_exception_handlers
 from service_desk.api.routes.conversations import router as conversation_router
 from service_desk.api.routes.customers import router as customer_router
 from service_desk.api.routes.tickets import router as ticket_router
-from service_desk.repositories.memory import (
-    InMemoryConversationRepository,
-    InMemoryCustomerRepository,
-    InMemoryMessageRepository,
-    InMemoryTicketRepository,
-)
+from service_desk.database.session import engine
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state.customer_repository = InMemoryCustomerRepository()
-    app.state.ticket_repository = InMemoryTicketRepository()
-    app.state.conversation_repository = InMemoryConversationRepository()
-    app.state.message_repository = InMemoryMessageRepository()
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     try:
         # yield之后, FastAPI开始接收请求
         yield
     finally:
         # 应用停止时执行一次
-        # 当前内存Repository没有需要主动关闭的资源
-        pass
+        engine.dispose()
 
 
 def create_app() -> FastAPI:
