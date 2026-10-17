@@ -64,6 +64,34 @@ class ConversationService:
 
         return conversation
 
+    def _add_message(
+        self,
+        *,
+        message_id: str,
+        conversation_id: str,
+        role: MessageRole,
+        content: str,
+    ) -> Message:
+        conversation = self._conversation_repository.get_by_id(conversation_id)
+        if conversation is None:
+            raise ConversationNotFound(conversation_id)
+
+        conversation.ensure_accepts_message()
+
+        if self._message_repository.get_by_id(message_id) is not None:
+            raise MessageAlreadyExists(message_id)
+
+        message = Message(
+            id=message_id,
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            created_at=datetime.now(UTC),
+        )
+
+        self._message_repository.add(message)
+        return message
+
     def add_user_message(
         self,
         *,
@@ -71,29 +99,26 @@ class ConversationService:
         conversation_id: str,
         content: str,
     ) -> Message:
-        conversation = self._conversation_repository.get_by_id(conversation_id)
-
-        if conversation is None:
-            raise ConversationNotFound(conversation_id)
-
-        conversation.ensure_accepts_message()
-
-        existing_message = self._message_repository.get_by_id(message_id)
-
-        if existing_message is not None:
-            raise MessageAlreadyExists(message_id)
-
-        message = Message(
-            id=message_id,
+        return self._add_message(
+            message_id=message_id,
             conversation_id=conversation_id,
-            role=MessageRole.USER,
             content=content,
-            created_at=datetime.now(UTC),
+            role=MessageRole.USER,
         )
 
-        self._message_repository.add(message)
-
-        return message
+    def add_assistant_message(
+        self,
+        *,
+        message_id: str,
+        conversation_id: str,
+        content: str,
+    ) -> Message:
+        return self._add_message(
+            message_id=message_id,
+            conversation_id=conversation_id,
+            content=content,
+            role=MessageRole.ASSISTANT,
+        )
 
     def list_messages(
         self,
@@ -128,3 +153,17 @@ class ConversationService:
         self._conversation_repository.update(conversation)
 
         return conversation
+
+    def list_recent_messages(
+        self,
+        *,
+        conversation_id: str,
+        limit: int,
+    ) -> list[Message]:
+        if self._conversation_repository.get_by_id(conversation_id) is None:
+            raise ConversationNotFound(conversation_id)
+
+        return self._message_repository.list_recent_by_conversation(
+            conversation_id=conversation_id,
+            limit=limit,
+        )

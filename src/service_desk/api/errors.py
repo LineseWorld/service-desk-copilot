@@ -1,6 +1,10 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
+from service_desk.agent.exceptions import (
+    AgentEmptyResponse,
+    AgentMaxStepsExceeded,
+)
 from service_desk.domain.exceptions import (
     ConversationAlreadyClosed,
     ConversationAlreadyExists,
@@ -13,6 +17,7 @@ from service_desk.domain.exceptions import (
     TicketAlreadyExists,
     TicketNotFound,
 )
+from service_desk.llm.exceptions import LLMError
 from service_desk.schemas.error import ErrorResponse
 
 
@@ -151,6 +156,50 @@ async def message_already_exists_handler(
     )
 
 
+async def llm_error_handler(
+    _request: Request,
+    exc: LLMError,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="llm_service_error",
+        message=str(exc),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=error.model_dump(),
+    )
+
+
+async def agent_max_steps_handler(
+    _request: Request,
+    exc: AgentMaxStepsExceeded,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="agent_max_steps_exceeded",
+        message=str(exc),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=error.model_dump(),
+    )
+
+
+async def agent_empty_response_handler(
+    _request: Request,
+    exc: AgentEmptyResponse,
+) -> JSONResponse:
+    error = ErrorResponse(
+        code="agent_empty_response",
+        message=str(exc),
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        content=error.model_dump(),
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         CustomerNotFound,
@@ -200,4 +249,19 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         MessageAlreadyExists,
         message_already_exists_handler,
+    )
+
+    app.add_exception_handler(
+        LLMError,
+        llm_error_handler,
+    )
+
+    app.add_exception_handler(
+        AgentMaxStepsExceeded,
+        agent_max_steps_handler,
+    )
+
+    app.add_exception_handler(
+        AgentEmptyResponse,
+        agent_empty_response_handler,
     )

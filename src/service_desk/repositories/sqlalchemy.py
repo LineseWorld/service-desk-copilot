@@ -243,3 +243,24 @@ class SqlAlchemyMessageRepository(MessageRepository):
         records = self._session.scalars(statement).all()
 
         return [message_to_domain(record) for record in records]
+
+    def list_recent_by_conversation(
+        self,
+        conversation_id: str,
+        *,
+        limit: int,
+    ) -> list[Message]:
+        statement = (
+            select(MessageRecord)
+            .where(MessageRecord.conversation_id == conversation_id)
+            .order_by(
+                MessageRecord.created_at.desc(),
+                MessageRecord.id.desc(),
+            )
+            .limit(limit)
+        )
+
+        records = list(self._session.scalars(statement).all())
+        records.reverse()
+
+        return [message_to_domain(record) for record in records]

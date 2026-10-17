@@ -47,7 +47,7 @@ select = [
     "UP",
     "RUF",
 ]
-allowed-confusables = ["，"]
+allowed-confusables = ["，","："]
 
 [tool.ruff.format]
 quote-style = "double"

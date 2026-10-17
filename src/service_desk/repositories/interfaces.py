@@ -60,3 +60,11 @@ class MessageRepository(ABC):
         limit: int,
         offset: int,
     ) -> list[Message]: ...
+
+    @abstractmethod
+    def list_recent_by_conversation(
+        self,
+        conversation_id: str,
+        *,
+        limit: int,
+    ) -> list[Message]: ...

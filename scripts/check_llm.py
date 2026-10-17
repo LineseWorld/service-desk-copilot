@@ -1,6 +1,7 @@
 from service_desk.config import get_settings
 from service_desk.llm.client import OpenAICompatibleLLMClient
 from service_desk.llm.exceptions import LLMConfigurationError, LLMError
+from service_desk.llm.models import ChatMessage
 
 
 def main() -> None:
@@ -15,20 +16,23 @@ def main() -> None:
     )
 
     try:
-        answer = client.complete(
-            system_prompt=(
-                "你是Service Desk Copilot，"
-                "负责协助企业客户查询客户资料和处理工单。"
-                "请使用简洁、专业的中文回答。"
-            ),
-            user_message="请用两句话介绍你的职责。",
+        reply = client.complete(
+            messages=[
+                ChatMessage.system(
+                    "你是Service Desk Copilot，"
+                    "负责协助企业客户查询客户资料和处理工单。"
+                    "请使用简洁、专业的中文回答。"
+                ),
+                ChatMessage.user("请用两句话介绍你的职责。"),
+            ],
+            tools=[],
         )
     except LLMError as exc:
         print(f"调用失败: {exc}")
         raise SystemExit(1) from exc
 
     print(f"模型: {client.model}")
-    print(f"回答: {answer}")
+    print(f"回答: {reply.message.content}")
 
 
 if __name__ == "__main__":

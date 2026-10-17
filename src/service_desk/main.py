@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from service_desk.api.errors import register_exception_handlers
+from service_desk.api.routes.agent import router as agent_router
 from service_desk.api.routes.conversations import router as conversation_router
 from service_desk.api.routes.customers import router as customer_router
 from service_desk.api.routes.tickets import router as ticket_router
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(customer_router)
     app.include_router(ticket_router)
     app.include_router(conversation_router)
+    app.include_router(agent_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

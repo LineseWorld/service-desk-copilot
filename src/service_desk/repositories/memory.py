@@ -109,3 +109,24 @@ class InMemoryMessageRepository(MessageRepository):
         matched_messages.sort(key=lambda message: (message.created_at, message.id))
 
         return matched_messages[offset : offset + limit]
+
+    def list_recent_by_conversation(
+        self,
+        conversation_id: str,
+        *,
+        limit: int,
+    ) -> list[Message]:
+        messages = [
+            deepcopy(message)
+            for message in self._messages.values()
+            if message.conversation_id == conversation_id
+        ]
+
+        messages.sort(
+            key=lambda message: (
+                message.created_at,
+                message.id,
+            )
+        )
+
+        return messages[-limit:]

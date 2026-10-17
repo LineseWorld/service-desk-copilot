@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+from typing import Any, cast
+
 from openai import (
     APIConnectionError,
     APIStatusError,
@@ -5,6 +8,7 @@ from openai import (
     OpenAI,
     RateLimitError,
 )
+from openai.types.chat import ChatCompletionMessageParam
 
 from service_desk.llm.exceptions import (
     LLMAuthenticationError,
@@ -12,9 +16,16 @@ from service_desk.llm.exceptions import (
     LLMRateLimitError,
     LLMResponseError,
 )
+from service_desk.llm.interfaces import LLMClient
+from service_desk.llm.models import (
+    ChatMessage,
+    ModelReply,
+    ToolCall,
+    ToolDefinition,
+)
 
 
-class OpenAICompatibleLLMClient:
+class OpenAICompatibleLLMClient(LLMClient):
     def __init__(
         self,
         *,
@@ -35,24 +46,66 @@ class OpenAICompatibleLLMClient:
     def model(self) -> str:
         return self._model
 
-    def complete(self, *, system_prompt: str, user_message: str) -> str:
+    def complete(
+        self,
+        *,
+        messages: Sequence[ChatMessage],
+        tools: Sequence[ToolDefinition],
+    ) -> ModelReply:
+
+        provider_message = cast(
+            list[ChatCompletionMessageParam],
+            [self._serialize_message(message) for message in messages],
+        )
+
+        provider_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in tools
+        ]
         try:
-            completion = self._client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
-                    {
-                        "role": "user",
-                        "content": user_message,
-                    },
-                ],
+            if provider_tools:
+                completion = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=provider_message,
+                    tools=provider_tools,
+                    tool_choice="auto",
+                )
+            else:
+                completion = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=provider_message,
+                )
+
+            if not completion.choices:
+                raise LLMResponseError("模型API没有返回choices")
+
+            message = completion.choices[0].message
+
+            tool_calls = tuple(
+                ToolCall(
+                    id=call.id,
+                    name=call.function.name,
+                    arguments_json=call.function.arguments,
+                )
+                for call in message.tool_calls or []
+            )
+
+            return ModelReply(
+                message=ChatMessage.assistant(
+                    message.content,
+                    tool_calls=tool_calls,
+                ),
+                finish_reason=completion.choices[0].finish_reason,
             )
         except AuthenticationError as exc:
             raise LLMAuthenticationError("模型API认证失败，请检查API Key") from exc
-
         except RateLimitError as exc:
             raise LLMRateLimitError("模型API达到频率或额度限制") from exc
         except APIConnectionError as exc:
@@ -60,9 +113,42 @@ class OpenAICompatibleLLMClient:
         except APIStatusError as exc:
             raise LLMResponseError(f"模型API返回错误状态码: {exc.status_code}") from exc
 
-        content = completion.choices[0].message.content
+    def _serialize_message(
+        self,
+        message: ChatMessage,
+    ) -> dict[str, Any]:
+        if message.role in {"system", "user"}:
+            return {"role": message.role, "content": message.content or ""}
 
-        if content is None or not content.strip():
-            raise LLMResponseError("模型没有返回有效文本")
+        if message.role == "assistant":
+            result: dict[str, Any] = {
+                "role": "assistant",
+                "content": message.content,
+            }
 
-        return content
+            if message.tool_calls:
+                result["tool_calls"] = [
+                    {
+                        "id": call.id,
+                        "type": "function",
+                        "function": {
+                            "name": call.name,
+                            "arguments": call.arguments_json,
+                        },
+                    }
+                    for call in message.tool_calls
+                ]
+
+            return result
+
+        if message.role == "tool":
+            if message.tool_call_id is None:
+                raise ValueError("tool消息缺少tool_call_id")
+
+            return {
+                "role": "tool",
+                "tool_call_id": message.tool_call_id,
+                "content": message.content or "",
+            }
+
+        raise ValueError(f"不支持的消息角色: {message.role}")
